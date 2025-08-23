@@ -1,4 +1,4 @@
-import { Injectable, Inject, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, Inject,HttpException, HttpStatus } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
@@ -6,13 +6,10 @@ import { firstValueFrom } from 'rxjs';
 import { RUCDTO } from '../dto/ruc.dto';
 
 @Injectable()
-export class SriRUCService {
-  private readonly baseUrl =
-    'https://srienlinea.sri.gob.ec/sri-catastro-sujeto-servicio-internet/rest/ConsolidadoContribuyente/obtenerPorNumerosRuc';
-
-  private readonly baseUrl2 =
-    'https://srienlinea.sri.gob.ec/sri-catastro-sujeto-servicio-internet/rest/ConsolidadoContribuyente/existePorNumeroRuc';
-
+export class RUCService {
+  private readonly baseUrl = process.env.RUC_URL1;
+  private readonly baseUrl2 = process.env.RUC_URL_EXISTE;
+  
   constructor(
     private readonly httpService: HttpService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
@@ -23,15 +20,14 @@ export class SriRUCService {
     const { ruc } = rucDTO;
     const cacheKey = `sri:ruc:${ruc}`;
     const cached = await this.cacheManager.get<{ existe: boolean; data: any }>(cacheKey);
-    
+
     if (cached) {
       console.log(`📦 Cache hit para RUC: ${ruc}`);
       return cached;
     }
-    
+
     try {
       const urlExiste = `${this.baseUrl2}?numeroRuc=${ruc}`;
-      console.log('url', urlExiste)
       const existeResponse = await firstValueFrom(this.httpService.get(urlExiste));
       const existe = existeResponse.data === true;
 
@@ -48,9 +44,14 @@ export class SriRUCService {
       const result = { existe: true, data: response.data };
       await this.cacheManager.set(cacheKey, result, 60 * 10); // cache 10 mins
       return result;
+
     } catch (error) {
       console.error('❌ Error al consultar el SRI:', error.message);
-      return { existe: false, data: null };
+      throw new HttpException(
+        'Error al consultar los datos en el SRI',
+        error?.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+      // return { existe: false, data: null };
     }
   }
 }

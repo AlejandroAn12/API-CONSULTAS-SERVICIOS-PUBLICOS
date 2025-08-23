@@ -14,16 +14,19 @@ datasource db {
 }
 
 model Usuario {
-  id           String       @id @default(uuid())
+  id           String   @id @default(uuid())
   nombres      String
-  email        String       @unique
+  email        String   @unique
   password     String
   refreshToken String?
-  estado       Boolean      @default(true)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  usuarioRol   UsuarioRol[]
-  apiKey       ApiKey[]
+  estado       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  roleId String
+  role   Rol    @relation(fields: [roleId], references: [id]) // Usuario pertenece a un Rol
+
+  apiKeys ApiKey[]
 }
 
 model Permiso {
@@ -37,24 +40,15 @@ model Permiso {
 }
 
 model Rol {
-  id          String          @id @default(uuid())
+  id          String   @id @default(uuid())
   nombre      String
   descripcion String?
-  estado      Boolean         @default(true)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  estado      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
   rolPermisos RolesPermisos[]
-  usuarioRol  UsuarioRol[]
-}
-
-model UsuarioRol {
-  usuarioId  String
-  rolId      String
-  assignedAt DateTime @default(now())
-  usuario    Usuario  @relation(fields: [usuarioId], references: [id])
-  rol        Rol      @relation(fields: [rolId], references: [id])
-
-  @@id([usuarioId, rolId])
+  usuarios    Usuario[] // Un Rol puede tener muchos usuarios
 }
 
 model RolesPermisos {
@@ -67,10 +61,12 @@ model RolesPermisos {
 }
 
 model ApiKey {
-  id        String   @id @default(uuid())
+  id        Int      @id @default(autoincrement())
   key       String   @unique
-  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+  system    String // nombre del sistema que consume tu API
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
   usuarioId String
-  activo    Boolean  @default(true)
-  creadoEn  DateTime @default(now())
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
 }

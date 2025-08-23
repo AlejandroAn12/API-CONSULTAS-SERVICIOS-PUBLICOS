@@ -184,57 +184,57 @@ export class RolesPermisosService {
     }
 
     // Asignar rol a usuario
-    async asignarRolAUsuario(usuarioId: string, rolId: string) {
-        // Verificar existencia
-        const usuario = await this.prismaService.usuario.findUnique({ where: { id: usuarioId } });
-        if (!usuario) throw new NotFoundException('Usuario no encontrado');
+    // async asignarRolAUsuario(usuarioId: string, rolId: string) {
+    //     // Verificar existencia
+    //     const usuario = await this.prismaService.usuario.findUnique({ where: { id: usuarioId } });
+    //     if (!usuario) throw new NotFoundException('Usuario no encontrado');
 
-        const rol = await this.prismaService.rol.findUnique({ where: { id: rolId } });
-        if (!rol) throw new NotFoundException('Rol no encontrado');
+    //     const rol = await this.prismaService.rol.findUnique({ where: { id: rolId } });
+    //     if (!rol) throw new NotFoundException('Rol no encontrado');
 
-        // Verificar si ya está asignado
-        const existe = await this.prismaService.usuarioRol.findUnique({
-            where: { usuarioId_rolId: { usuarioId, rolId } },
-        });
-        if (existe) throw new BadRequestException('Rol ya asignado a este usuario');
+    //     // Verificar si ya está asignado
+    //     const existe = await this.prismaService.usuarioRol.findUnique({
+    //         where: { usuarioId_rolId: { usuarioId, rolId } },
+    //     });
+    //     if (existe) throw new BadRequestException('Rol ya asignado a este usuario');
 
-        // Crear relación
-        await this.prismaService.usuarioRol.create({
-            data: { usuarioId, rolId },
-        });
+    //     // Crear relación
+    //     await this.prismaService.usuarioRol.create({
+    //         data: { usuarioId, rolId },
+    //     });
 
-        return {
-            ok: true,
-            mensaje: 'Rol asignado correctamente al usuario',
-        };
-    }
+    //     return {
+    //         ok: true,
+    //         mensaje: 'Rol asignado correctamente al usuario',
+    //     };
+    // }
 
     /**
    * Verifica si un usuario tiene un permiso específico por nombre
    */
-    async usuarioTienePermiso(usuarioId: string, nombrePermiso: string): Promise<boolean> {
-        const rolesDelUsuario = await this.prismaService.usuarioRol.findMany({
-            where: { usuarioId },
-            include: {
-                rol: {
-                    include: {
-                        rolPermisos: {
-                            include: {
-                                permiso: true,
-                            },
-                        },
-                    },
-                },
-            },
-        });
+    // async usuarioTienePermiso(usuarioId: string, nombrePermiso: string): Promise<boolean> {
+    //     const rolesDelUsuario = await this.prismaService.usuarioRol.findMany({
+    //         where: { usuarioId },
+    //         include: {
+    //             rol: {
+    //                 include: {
+    //                     rolPermisos: {
+    //                         include: {
+    //                             permiso: true,
+    //                         },
+    //                     },
+    //                 },
+    //             },
+    //         },
+    //     });
 
-        for (const userRol of rolesDelUsuario) {
-            const permisos = userRol.rol.rolPermisos.map((rp) => rp.permiso.nombre);
-            if (permisos.includes(nombrePermiso)) {
-                return true;
-            }
-        }
+    //     for (const userRol of rolesDelUsuario) {
+    //         const permisos = userRol.rol.rolPermisos.map((rp) => rp.permiso.nombre);
+    //         if (permisos.includes(nombrePermiso)) {
+    //             return true;
+    //         }
+    //     }
 
-        return false;
-    }
+    //     return false;
+    // }
 }

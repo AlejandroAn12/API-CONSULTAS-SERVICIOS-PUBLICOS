@@ -1,46 +1,39 @@
 import { Controller, Get, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { PlacaDTO } from "../dto/placa.dto";
-import { SriPlacasService } from "../service/consulta-placas.service";
+import { PlacasService } from "../service/consulta-placas.service";
 import { ReportePagoDTO } from "../dto/reportePagos.dto";
-import { JwtAuthGuard } from "src/common/guards/jwt-auth.guard";
-import { RolesPermisosGuard } from "src/common/guards/roles-permisos.guard";
-import { Role } from "src/common/enums/role.enum";
-import { Roles } from "src/common/decorators/roles.decorator";
+import { ApiKeyGuard } from "src/common/guards/apikey.guard";
 
-// @UseGuards(JwtAuthGuard, RolesPermisosGuard)
-@ApiTags('Servicio Vehicular')
+@UseGuards(ApiKeyGuard)
+@ApiTags('CONSULTA DE PLACAS')
 @ApiBearerAuth('jwt-auth')
-@Controller('servicio-vehiculo')
+@Controller('placas')
 export class ConsultaVehiculoController {
 
-    constructor(private readonly sriplacasService: SriPlacasService) { }
+    constructor(private readonly placasService: PlacasService) { }
 
-    // @Roles(Role.ADMINISTRADOR, Role.USUARIO_REGULAR, Role.USUARIO_PREMIUN)
     @Get('consulta-placa')
     @ApiOperation({ summary: 'Consulta datos de un vehiculo por número de placa' })
     async consultarPorNumero(@Query() placaDto: PlacaDTO) {
-        return this.sriplacasService.obtenerDatosPorPlaca(placaDto);
+        return this.placasService.obtenerDatosPorPlaca(placaDto);
     }
 
-    // @Roles(Role.ADMINISTRADOR, Role.USUARIO_REGULAR, Role.USUARIO_PREMIUN)
-    @Get('reporte-pagos')
+    @Get('pagos')
     @ApiOperation({ summary: 'Consulta reporte de pagos de vehiculo por placa' })
     async consultarReportePagos(@Query() placaDto: PlacaDTO) {
-        return this.sriplacasService.obtenerReportePagos(placaDto);
+        return this.placasService.obtenerReportePagos(placaDto);
     }
 
-    // @Roles(Role.ADMINISTRADOR, Role.USUARIO_REGULAR, Role.USUARIO_PREMIUN)
-    @Get('reporte-detalle-pagos')
+    @Get('detalle-pagos')
     @ApiOperation({ summary: 'Consulta reporte de pagos a detalle del vehiculo' })
     async consultarPagosDetalle(@Query() reportePagoDTO: ReportePagoDTO) {
-        return this.sriplacasService.obtenerReportePagosDetalle(reportePagoDTO);
+        return this.placasService.obtenerReportePagosDetalle(reportePagoDTO);
     }
 
-    // @Roles(Role.ADMINISTRADOR, Role.USUARIO_REGULAR, Role.USUARIO_PREMIUN)
     @Get('valores-pendientes')
     @ApiOperation({ summary: 'Consulta valores pendientes de un vehiculo por número de placa' })
     async consultarValoresPendientes(@Query() placaDto: PlacaDTO) {
-        return this.sriplacasService.obtenerValoresPendientes(placaDto);
+        return this.placasService.obtenerValoresPendientes(placaDto);
     }
 }

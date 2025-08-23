@@ -4,7 +4,6 @@ import { LoginDTO } from '../dto/login.dto';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { TokensDto } from '../dto/tokens.dto';
 import { RequestWithUser } from 'src/common/types/request-with-user';
-import { JwtRefreshGuard } from 'src/common/guards/jwt-refresh.guard';
 import { Public } from 'src/common/decorators/public.decorator';
 
 @ApiTags('Autenticación')
@@ -19,9 +18,10 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
-  @UseGuards(JwtRefreshGuard)
+
   @Post('refresh')
   async refreshTokens(@Req() req: RequestWithUser): Promise<TokensDto> {
+    console.log(req)
     const { sub } = req.user;
     const refreshToken = req.headers['authorization']
       ?.replace('Bearer', '')

@@ -5,7 +5,6 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 // import { ApiKeyGuard } from './common/guards/api-key.guard.tsju';
 import { PrismaService } from './prisma/prisma.service';
-import { ConsultaPublicaGuard } from './common/guards/consulta-publica.guard';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -16,7 +15,6 @@ async function bootstrap() {
     credentials: true,
   });
   // app.useGlobalGuards(new ApiKeyGuard(app.get(ConfigService), app.get(Reflector), app.get(PrismaService)));
-  app.useGlobalGuards(new ConsultaPublicaGuard(app.get(Reflector), app.get(PrismaService)));
 
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
   app.setGlobalPrefix('api/v1');

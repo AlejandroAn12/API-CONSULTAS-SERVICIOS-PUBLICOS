@@ -7,20 +7,17 @@ import { firstValueFrom } from "rxjs";
 import { ReportePagoDTO } from "../dto/reportePagos.dto";
 
 @Injectable()
-export class SriPlacasService {
-    private readonly urlExistePlaca =
-        'https://srienlinea.sri.gob.ec/sri-matriculacion-vehicular-recaudacion-servicio-internet/rest/BaseVehiculo/existePorNumeroPlaca';
+export class PlacasService {
 
-    private readonly urlDatosPlaca =
-        'https://srienlinea.sri.gob.ec/sri-matriculacion-vehicular-recaudacion-servicio-internet/rest/BaseVehiculo/obtenerPorNumeroPlacaOPorNumeroCampvOPorNumeroCpn';
+    private readonly urlExistePlaca = process.env.URL_EXISTE_PLACA;
 
-    private readonly urlReportePago =
-        'https://srienlinea.sri.gob.ec/sri-matriculacion-vehicular-recaudacion-servicio-internet/rest/consultaPagos/obtenerPorPlacaCampvCpn';
+    private readonly urlDatosPlaca = process.env.URL_DATOS_PLACA;
 
-    private readonly urlReportePagoDetalle =
-        'https://srienlinea.sri.gob.ec/sri-matriculacion-vehicular-recaudacion-servicio-internet/rest/consultaPagos/obtenerDetallesPago';
+    private readonly urlReportePago = process.env.URL_REPORTE_PAGO;
 
-    private readonly urlValoresPendientes = 'https://srienlinea.sri.gob.ec/sri-matriculacion-vehicular-recaudacion-servicio-internet/rest/ConsultaRubros/obtenerPorCodigoVehiculo';
+    private readonly urlReportePagoDetalle = process.env.URL_REPORTE_PAGO_DETALLE;
+
+    private readonly urlValoresPendientes = process.env.URL_VALORES_PENDIENTES_PAGO;
 
     constructor(
         private readonly httpService: HttpService,

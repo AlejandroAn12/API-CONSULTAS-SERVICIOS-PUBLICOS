@@ -57,19 +57,19 @@ export class RolesPermisosController {
         return this.rolesPermisosService.asignarPermisoARol(dto.rolId, dto.permisoId);
     }
 
-    @Post('asignar-rol-a-usuario')
-    @HttpCode(HttpStatus.CREATED)
-    async asignarRolAUsuario(@Body() dto: CrearUsuarioRolDto) {
-        return this.rolesPermisosService.asignarRolAUsuario(dto.usuarioId, dto.rolId);
-    }
+    // @Post('asignar-rol-a-usuario')
+    // @HttpCode(HttpStatus.CREATED)
+    // async asignarRolAUsuario(@Body() dto: CrearUsuarioRolDto) {
+    //     return this.rolesPermisosService.asignarRolAUsuario(dto.usuarioId, dto.rolId);
+    // }
 
     //Validar si un usuario tiene un permiso específico
-    @Get('validar-permiso/:usuarioId/:permiso')
-    async verificarPermiso(
-        @Param('usuarioId') usuarioId: string,
-        @Param('permiso') permiso: string,
-    ) {
-        const tienePermiso = await this.rolesPermisosService.usuarioTienePermiso(usuarioId, permiso);
-        return { tienePermiso };
-    }
+//     @Get('validar-permiso/:usuarioId/:permiso')
+//     async verificarPermiso(
+//         @Param('usuarioId') usuarioId: string,
+//         @Param('permiso') permiso: string,
+//     ) {
+//         const tienePermiso = await this.rolesPermisosService.usuarioTienePermiso(usuarioId, permiso);
+//         return { tienePermiso };
+//     }
 }

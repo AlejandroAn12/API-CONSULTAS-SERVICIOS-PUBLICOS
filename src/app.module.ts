@@ -8,7 +8,6 @@ import { AdminModule } from './modulos/admin/admin.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
-import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -38,12 +37,6 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     
   ],
   controllers: [],
-  providers: [
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
-    },
-    JwtAuthGuard,
-  ],
+  providers: [],
 })
 export class AppModule { }

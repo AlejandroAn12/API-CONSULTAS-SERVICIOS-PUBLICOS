@@ -7,10 +7,22 @@ import { PrismaModule } from 'src/prisma/prisma.module';
 import { RolesPermisosController } from './roles/controllers/roles-permisos.controller';
 import { RolesPermisosService } from './roles/services/rolesPermisosService.service';
 import { AuthModule } from './auth/auth.module';
+import { ApiKeyService } from './apiKey/apiKey.service';
+import { ApiKeyController } from './apiKey/apikey.controller';
 
 @Module({
   imports: [PrismaModule, AuthModule],
-  providers: [UsuariosService, RolesService, RolesPermisosService],
-  controllers: [UsuariosController, RolesController, RolesPermisosController]
+  providers: [
+    UsuariosService,
+    RolesService,
+    RolesPermisosService,
+    ApiKeyService
+  ],
+  controllers: [
+    UsuariosController,
+    RolesController,
+    RolesPermisosController,
+    ApiKeyController
+  ]
 })
-export class AdminModule {}
+export class AdminModule { }

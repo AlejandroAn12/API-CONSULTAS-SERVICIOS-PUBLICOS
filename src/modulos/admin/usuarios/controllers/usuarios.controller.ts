@@ -1,12 +1,13 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { UsuariosService } from '../services/usuarios.service';
-import { UsuarioDTO } from '../dto/usuario.dto';
 import { ApiExcludeController, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { Public } from 'src/common/decorators/public.decorator';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { UsuarioDTO } from '../dto/usuario.dto';
 
 //@ApiExcludeController() // Excluye el controlador de la documentación de Swagger
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @ApiTags('Usuarios')
 @Controller('usuarios')
 export class UsuariosController {

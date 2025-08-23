@@ -2,6 +2,8 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UsuarioDTO } from '../dto/usuario.dto';
 import { HashUtil } from 'src/common/utils/hash.util';
+import { randomBytes } from 'crypto';
+import { Role } from 'src/common/enums/role.enum';
 
 @Injectable()
 export class UsuariosService {
@@ -11,7 +13,8 @@ export class UsuariosService {
 
     //Crear un nuevo usuario
     async crearUsuario(usuarioDto: UsuarioDTO) {
-        const { nombres, email, password } = usuarioDto;
+        const { nombres, email, password, system } = usuarioDto;
+        const newKey = randomBytes(32).toString('hex');
 
         try {
             const usuarioExiste = await this.prismaService.usuario.findUnique({
@@ -19,27 +22,46 @@ export class UsuariosService {
             });
 
             if (usuarioExiste) {
-                throw new NotFoundException('El email ya está en uso, pruebe con otro.');
+                throw new BadRequestException('El email ya está en uso, pruebe con otro.');
+            }
+
+            const rol = await this.prismaService.rol.findFirst({
+                where: {nombre: Role.USUARIO}
+            });
+
+            if(!rol){
+                throw new NotFoundException('Rol no encontrado');
             }
 
             //hashear el password antes de guardarlo
             const hash = await HashUtil.hashPassword(password);
 
-            await this.prismaService.usuario.create({
+            const usuarioBD = await this.prismaService.usuario.create({
                 data: {
                     nombres,
+                    roleId: rol.id,
                     email,
                     password: hash,
                 },
             });
 
+            //Crear registros en el apikey
+            await this.prismaService.apiKey.create({
+                data: {
+                    key: await newKey,
+                    system,
+                    usuarioId: usuarioBD.id
+                }
+            });
+
             return {
                 ok: true,
-                mensaje: 'Usuario creado correctamente'
+                mensaje: 'Usuario y apikey creado correctamente'
             };
 
         } catch (error) {
-            if (error instanceof NotFoundException) {
+            console.error('Error=> ', error)
+            if (error instanceof BadRequestException) {
                 throw error;
             }
             throw new BadRequestException('Ha ocurrido un error interno al crear el usuario');
@@ -54,32 +76,21 @@ export class UsuariosService {
                     id: true,
                     nombres: true,
                     email: true,
-                    usuarioRol: {
+                    role: {
                         select: {
-                            rol: {
-                                select: {
-                                    id: true,
-                                    nombre: true,
-                                },
-                            },
-                        },
-                    },
+                            nombre: true
+                        }
+                    }
                 },
             });
             if (!usuarios || usuarios.length === 0) {
                 throw new NotFoundException('No se encontraron usuarios');
             }
-            // Mapeo para transformar los datos antes de devolverlos
-            const usuariosMap = usuarios.map(usuario => ({
-                id: usuario.id,
-                nombres: usuario.nombres,
-                email: usuario.email,
-                roles: usuario.usuarioRol.map(rol => rol.rol),
-            }));
+           
             // Devolver los usuarios obtenidos
             return {
                 ok: true,
-                data: usuariosMap,
+                data: usuarios,
             };
         } catch (error) {
             if (error instanceof NotFoundException) {
@@ -108,4 +119,5 @@ export class UsuariosService {
             throw new BadRequestException('Ha ocurrido un error interno al obtener el usuario');
         }
     }
+
 }

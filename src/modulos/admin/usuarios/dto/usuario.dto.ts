@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty } from "class-validator";
+import { IsNotEmpty, IsString } from "class-validator";
 
 export class UsuarioDTO {
     @ApiProperty({ description: 'Nombres', example: 'Juan Fernando' })
@@ -13,4 +13,10 @@ export class UsuarioDTO {
     @ApiProperty({ description: 'Password', example: '*********' })
     @IsNotEmpty({ message: 'El password no puede estar vacío' })
     password: string;
+
+    // @IsString()
+    // rol: string;
+
+    @IsString()
+    system: string;
 }

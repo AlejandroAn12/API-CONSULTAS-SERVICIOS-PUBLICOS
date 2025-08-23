@@ -158,9 +158,9 @@ export class RolesService {
     const usuario = await this.prismaService.usuario.findUnique({
       where: { id: usuarioId },
       include: {
-        usuarioRol: {
-          include: {
-            rol: true,
+        role: {
+          select: {
+            nombre: true,
           },
         },
       },
@@ -170,7 +170,7 @@ export class RolesService {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    return usuario.usuarioRol.map((ur) => ur.rol);
+    return usuario;
   }
 
  

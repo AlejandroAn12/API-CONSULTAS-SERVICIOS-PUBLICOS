@@ -26,9 +26,19 @@ export class AuthService {
   async login(dto: LoginDTO): Promise<TokensDto> {
     try {
       const user = await this.validateUser(dto.email, dto.password);
+  
     if (!user) throw new UnauthorizedException('Credenciales inválidas');
 
-    const tokens = await this.generateTokens(user.id, user.email);
+    const rolUsuario = await this.prisma.rol.findUnique({
+      where: {id: user.roleId},
+      select: {
+        nombre: true
+      }
+    });
+    
+    const role = rolUsuario?.nombre || '';
+
+    const tokens = await this.generateTokens(user.id, user.email, role);
     await this.storeRefreshToken(user.id, tokens.refreshToken);
     return tokens;
     } catch (error) {
@@ -40,10 +50,10 @@ export class AuthService {
     }
   }
 
-  async generateTokens(userId: string, email: string): Promise<TokensDto> {
+  async generateTokens(userId: string, email: string, role: string): Promise<TokensDto> {
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync({ sub: userId, email }, { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '15m' }),
-      this.jwtService.signAsync({ sub: userId, email }, { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' }),
+      this.jwtService.signAsync({ sub: userId, email, role }, { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '15m' }),
+      this.jwtService.signAsync({ sub: userId, email, role }, { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' }),
     ]);
 
     return { accessToken, refreshToken };
@@ -64,12 +74,20 @@ export class AuthService {
       throw new UnauthorizedException('No autorizado');
     }
 
+    const rolUsuario = await this.prisma.rol.findUnique({
+      where: {id: user?.roleId},
+      select: {
+        nombre: true
+      }
+    });
+    const role = rolUsuario?.nombre || '';
+
     const isValid = await TokenHasher.compareTokens(rt, user.refreshToken);
     if (!isValid) {
       throw new UnauthorizedException('Token inválido');
     }
 
-    const tokens = await this.generateTokens(user.id, user.email);
+    const tokens = await this.generateTokens(user.id, user.email, role);
     await this.storeRefreshToken(user.id, tokens.refreshToken);
     return tokens;
   }
