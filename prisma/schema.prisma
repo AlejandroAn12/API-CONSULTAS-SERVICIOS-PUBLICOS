@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id           String       @id @default(uuid())
+  nombres      String
+  email        String       @unique
+  password     String
+  refreshToken String?
+  estado       Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  usuarioRol   UsuarioRol[]
+  apiKey       ApiKey[]
+}
+
+model Permiso {
+  id          String          @id @default(uuid())
+  nombre      String?
+  descripcion String?
+  estado      Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  rolPermisos RolesPermisos[]
+}
+
+model Rol {
+  id          String          @id @default(uuid())
+  nombre      String
+  descripcion String?
+  estado      Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  rolPermisos RolesPermisos[]
+  usuarioRol  UsuarioRol[]
+}
+
+model UsuarioRol {
+  usuarioId  String
+  rolId      String
+  assignedAt DateTime @default(now())
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id])
+  rol        Rol      @relation(fields: [rolId], references: [id])
+
+  @@id([usuarioId, rolId])
+}
+
+model RolesPermisos {
+  rolId     String
+  permisoId String
+  rol       Rol     @relation(fields: [rolId], references: [id])
+  permiso   Permiso @relation(fields: [permisoId], references: [id])
+
+  @@id([rolId, permisoId])
+}
+
+model ApiKey {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+  usuarioId String
+  activo    Boolean  @default(true)
+  creadoEn  DateTime @default(now())
+}

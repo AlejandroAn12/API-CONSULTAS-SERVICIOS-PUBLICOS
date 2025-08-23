@@ -4,7 +4,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './services/auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { AuthController } from './controller/auth.controller';
-import { RefreshTokenStrategy } from './strategies/refreshToken.strategy';
+import { JwtRefreshStrategy } from './strategies/refreshToken.strategy';
+import { UsuariosService } from '../usuarios/services/usuarios.service';
+import { PrismaModule } from 'src/prisma/prisma.module';
 
 @Module({
   imports: [
@@ -16,8 +18,11 @@ import { RefreshTokenStrategy } from './strategies/refreshToken.strategy';
         signOptions: { expiresIn: config.get('JWT_EXPIRES_IN') },
       }),
     }),
+    PrismaModule
+
   ],
-  providers: [AuthService, JwtStrategy, RefreshTokenStrategy],
+  providers: [ AuthService, UsuariosService, JwtStrategy, JwtRefreshStrategy],
   controllers: [AuthController],
+  exports:[]
 })
 export class AuthModule {}

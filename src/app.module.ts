@@ -7,6 +7,8 @@ import { ConsultaVehiculosModule } from './modulos/consulta-vehiculos/consulta-v
 import { AdminModule } from './modulos/admin/admin.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { PrismaModule } from './prisma/prisma.module';
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -23,7 +25,7 @@ import { APP_GUARD } from '@nestjs/core';
         },
       ],
     }),
-    
+
     CacheModule.register({
       ttl: 60 * 10, // 10 minutos de duración por defecto
       isGlobal: true,
@@ -32,7 +34,8 @@ import { APP_GUARD } from '@nestjs/core';
     ConsultaCedulaModule,
     ConsultaVehiculosModule,
     AdminModule,
-
+    PrismaModule,
+    
   ],
   controllers: [],
   providers: [
@@ -40,6 +43,7 @@ import { APP_GUARD } from '@nestjs/core';
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+    JwtAuthGuard,
   ],
 })
 export class AppModule { }

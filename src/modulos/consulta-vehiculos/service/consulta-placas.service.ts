@@ -160,7 +160,7 @@ export class SriPlacasService {
 
     // Método para obtener los valores pendientes de un vehículo por su placa
     // 1. Verificar existencia de la placa en el SRI
-    async obtenerValoresPendientes(placaDto: PlacaDTO): Promise<any> {
+    async obtenerValoresPendientes(placaDto: PlacaDTO): Promise<{ existe: string; data: any }> {
         const placa = placaDto.placa.trim().toUpperCase();
 
         const regex = /^[A-Z]{3}\d{4}$/;
@@ -206,23 +206,80 @@ export class SriPlacasService {
             const codVehiculo = result.data.codigoVehiculo;
 
 
+            // ...
             const urlValoresPendientes = `${this.urlValoresPendientes}?codigoVehiculo=${codVehiculo}`;
             const response3 = await firstValueFrom(
                 this.httpService.get(urlValoresPendientes, {
                     headers: { 'User-Agent': 'Mozilla/5.0' },
+                    responseType: 'json',
+                    validateStatus: () => true, // no lances error por status != 2xx
                 }),
             );
 
-            if (response3.data?.mensajeServidor?.texto !== 'ok') {
-                return { existe: 'Respuesta inválida del SRI', data: null };
-            }
-            if (response3.data?.mensajeServidor?.texto === 'No existen valores pendientes') {
-                return { existe: 'No existen valores pendientes', data: null };
+            let body: any = response3.data;
+
+            // Normalizar cuando el servidor devuelve string (p.ej. '' o '[]')
+            if (typeof body === 'string') {
+                const trimmed = body.trim();
+                if (!trimmed) {
+                    // string vacío => no hay valores pendientes
+                    const none = { existe: 'No existen valores pendientes', data: null };
+                    await this.cacheManager.set(cacheKey, none, 60 * 10);
+                    return none;
+                }
+                // intenta parsear por si vino como texto JSON (p.ej. '[]' o '[{...}]')
+                try {
+                    body = JSON.parse(trimmed);
+                } catch {
+                    // No es JSON parseable: trátalo como no hay datos
+                    const none = { existe: 'No existen valores pendientes', data: null };
+                    await this.cacheManager.set(cacheKey, none, 60 * 10);
+                    return none;
+                }
             }
 
-            const resultValoresPendientes = { existe: 'Ok', data: response3.data };
-            await this.cacheManager.set(cacheKey, result, 60 * 10);
-            return resultValoresPendientes;
+            // Si viene directamente un array en el root
+            if (Array.isArray(body)) {
+                if (body.length === 0) {
+                    const none = { existe: 'No existen valores pendientes', data: null };
+                    await this.cacheManager.set(cacheKey, none, 60 * 10);
+                    return none;
+                }
+                const ok = { existe: 'Ok', data: body };
+                await this.cacheManager.set(cacheKey, ok, 60 * 10);
+                return ok;
+            }
+
+            // Si viene como objeto con 'data' o 'mensajeServidor'
+            if (body && typeof body === 'object') {
+                // Caso con mensaje del servidor
+                const texto = body?.mensajeServidor?.texto as string | undefined;
+                if (texto) {
+                    if (texto.toLowerCase().includes('no existen valores pendientes')) {
+                        const none = { existe: 'No existen valores pendientes', data: null };
+                        await this.cacheManager.set(cacheKey, none, 60 * 10);
+                        return none;
+                    }
+                    if (texto.toLowerCase() !== 'ok') {
+                        return { existe: 'Respuesta inválida del SRI', data: null };
+                    }
+                }
+
+                // Caso con data adentro
+                if (Array.isArray(body.data)) {
+                    if (body.data.length === 0) {
+                        const none = { existe: 'No existen valores pendientes', data: null };
+                        await this.cacheManager.set(cacheKey, none, 60 * 10);
+                        return none;
+                    }
+                    const ok = { existe: 'Ok', data: body.data };
+                    await this.cacheManager.set(cacheKey, ok, 60 * 10);
+                    return ok;
+                }
+            }
+
+            // Fallback: estructura inesperada
+            return { existe: 'Respuesta inválida del SRI', data: null };
 
         } catch (error) {
             console.error('❌ Error al consultar el SRI:', error.message);

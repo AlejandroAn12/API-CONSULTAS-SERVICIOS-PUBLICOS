@@ -9,7 +9,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
     const jwtSecret = process.env.JWT_ACCESS_SECRET;
     if (!jwtSecret) {
-      throw new Error('JWT_ACCESS_SECRET is not defined in the environment variables');
+      throw new Error('JWT SECRET is not defined in the environment variables');
     }
 
     super({
@@ -19,7 +19,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   async validate(payload: any) {
-    return payload;
+    return {
+      sub: payload.sub,
+      email: payload.email,
+    };
   }
 }
 // export class JwtStrategy extends PassportStrategy(Strategy) {

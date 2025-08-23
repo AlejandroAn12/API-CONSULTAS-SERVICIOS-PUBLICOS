@@ -1,17 +1,24 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
+// import { ApiKeyGuard } from './common/guards/api-key.guard.tsju';
+import { PrismaService } from './prisma/prisma.service';
+import { ConsultaPublicaGuard } from './common/guards/consulta-publica.guard';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
-    origin: process.env.FRONTEND_ORIGIN,
+    // origin: ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:8000'],
+    origin: '*', // Cambiar a un origen específico en producción
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
-  app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  // app.useGlobalGuards(new ApiKeyGuard(app.get(ConfigService), app.get(Reflector), app.get(PrismaService)));
+  app.useGlobalGuards(new ConsultaPublicaGuard(app.get(Reflector), app.get(PrismaService)));
 
+  app.useGlobalPipes(new ValidationPipe({ transform: true }));
   app.setGlobalPrefix('api/v1');
 
   const config = new DocumentBuilder()
@@ -31,7 +38,6 @@ async function bootstrap() {
     // .addServer('http://localhost:3002')
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
-  // SwaggerModule.setup('api', app, documentFactory);
   SwaggerModule.setup('api-docs', app, documentFactory(), {
     swaggerOptions: {
       docExpansion: 'none',

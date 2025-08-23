@@ -1,0 +1,109 @@
+
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+} from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { ApiKeyService } from 'src/modulos/admin/auth/api-key/service/api-key.service';
+import { PrismaService } from 'src/prisma/prisma.service';
+
+@Injectable()
+export class ApiKeyGuard implements CanActivate {
+  constructor(
+    private readonly apiKeyService: ApiKeyService,
+    private readonly reflector: Reflector,
+    private readonly prismaService: PrismaService
+  ) { console.log('ApiKeyService:', this.apiKeyService); }
+
+
+
+  // async canActivate(context: ExecutionContext): Promise<boolean> {
+  //   try {
+  //     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+  //       context.getHandler(),
+  //       context.getClass(),
+  //     ]);
+
+  //     if (isPublic) return true;
+
+  //     const request = context.switchToHttp().getRequest();
+  //     const apiKey = request.headers['x-api-key'];
+  //     console.log('API Key =>', apiKey);
+  //     if (!apiKey) {
+  //       throw new UnauthorizedException('API key no proporcionada');
+  //     }
+
+  //     const keyRecord = await this.validateApiKey(apiKey);
+
+  //     if (!keyRecord) {
+  //       throw new UnauthorizedException('API key no válida o no activa');
+  //     }
+
+  //     if (!keyRecord.activo) {
+  //       throw new ForbiddenException('API key no activa');
+  //     }
+
+
+  //     if (keyRecord && keyRecord.activo) {
+  //       request.user = keyRecord.usuario; // guardar usuario en el request
+  //       return true;
+  //     }
+
+  //     return false; // Rechaza si la key no existe o no está activa
+    
+  //   } catch (error) {
+    
+  //     if (error instanceof ForbiddenException) {
+  //       throw error;
+  //     }
+  //     // Si el error es UnauthorizedException, lanza el error
+  //     if (error instanceof UnauthorizedException) {
+  //       throw error;
+  //     }
+  //     return error; // Ensure a return value in all code paths
+  //   }
+  // }
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+  const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+    context.getHandler(),
+    context.getClass(),
+  ]);
+  if (isPublic) return true;
+
+  const request = context.switchToHttp().getRequest();
+  const apiKey = request.headers['x-api-key'];
+  const userIdFromHeader = request.headers[''];
+
+  if (!apiKey || !userIdFromHeader) return false;
+
+  const keyRecord = await this.prismaService.apiKey.findUnique({
+    where: { key: apiKey },
+    include: { usuario: true },
+  });
+
+  console.log('API Key =>', apiKey);
+  console.log('User ID =>', userIdFromHeader);
+
+  if (!keyRecord || !keyRecord.activo) return false;
+
+  // Validamos que el userId del header coincida con el usuario dueño del API key
+  if (keyRecord.usuarioId !== userIdFromHeader) return false;
+
+  request.user = keyRecord.usuario; // opcional
+  return true;
+}
+
+
+  // private async validateApiKey(apiKey: string) {
+  //   const keyRecord = await this.prismaService.apiKey.findUnique({
+  //     where: { key: apiKey },
+  //     include: { usuario: true },
+  //   });
+
+  //   if (keyRecord?.activo) return keyRecord;
+  //   return null;
+  // }
+}
