@@ -66,6 +66,7 @@ model ApiKey {
   system    String // nombre del sistema que consume tu API
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
+  expiresAt DateTime   // fecha de expiración
 
   usuarioId String
   usuario   Usuario @relation(fields: [usuarioId], references: [id])

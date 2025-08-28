@@ -13,8 +13,11 @@ export class UsuariosService {
 
     //Crear un nuevo usuario
     async crearUsuario(usuarioDto: UsuarioDTO) {
+        const durationDays = 15;
         const { nombres, email, password, system } = usuarioDto;
         const newKey = randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+
 
         try {
             const usuarioExiste = await this.prismaService.usuario.findUnique({
@@ -26,10 +29,10 @@ export class UsuariosService {
             }
 
             const rol = await this.prismaService.rol.findFirst({
-                where: {nombre: Role.USUARIO}
+                where: { nombre: Role.USUARIO }
             });
 
-            if(!rol){
+            if (!rol) {
                 throw new NotFoundException('Rol no encontrado');
             }
 
@@ -50,13 +53,14 @@ export class UsuariosService {
                 data: {
                     key: await newKey,
                     system,
-                    usuarioId: usuarioBD.id
+                    usuarioId: usuarioBD.id,
+                    expiresAt
                 }
             });
 
             return {
                 ok: true,
-                mensaje: 'Usuario y apikey creado correctamente'
+                mensaje: 'Registro exitoso, tienes 15 dias gratis para usar el API'
             };
 
         } catch (error) {
@@ -86,7 +90,7 @@ export class UsuariosService {
             if (!usuarios || usuarios.length === 0) {
                 throw new NotFoundException('No se encontraron usuarios');
             }
-           
+
             // Devolver los usuarios obtenidos
             return {
                 ok: true,

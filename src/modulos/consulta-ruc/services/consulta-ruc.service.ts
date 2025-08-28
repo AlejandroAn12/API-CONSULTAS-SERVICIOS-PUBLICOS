@@ -1,4 +1,4 @@
-import { Injectable, Inject,HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, Inject, HttpException, HttpStatus } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
@@ -9,7 +9,7 @@ import { RUCDTO } from '../dto/ruc.dto';
 export class RUCService {
   private readonly baseUrl = process.env.RUC_URL1;
   private readonly baseUrl2 = process.env.RUC_URL_EXISTE;
-  
+
   constructor(
     private readonly httpService: HttpService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
@@ -51,7 +51,6 @@ export class RUCService {
         'Error al consultar los datos en el SRI',
         error?.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
-      // return { existe: false, data: null };
     }
   }
 }

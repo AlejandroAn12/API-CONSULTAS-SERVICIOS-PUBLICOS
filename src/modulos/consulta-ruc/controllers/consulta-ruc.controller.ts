@@ -16,7 +16,7 @@ export class ConsultaRucController {
   constructor(private readonly rucService: RUCService) { }
 
   // @Roles(Role.ADMINISTRADOR, Role.USUARIO_REGULAR, Role.USUARIO_PREMIUN)
-  @Public()
+  // @Public()
   @Get('consulta')
   @UsePipes(new ValidationPipe({ transform: true }))
   async consultarPorRuc(@Query() rucDto: RUCDTO) {

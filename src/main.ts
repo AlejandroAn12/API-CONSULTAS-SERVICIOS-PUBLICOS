@@ -42,7 +42,10 @@ async function bootstrap() {
       defaultModelsExpandDepth: -1,
     },
   });
-  await app.listen(process.env.SERVER_PORT ?? 3000);
-  console.log(`🚀 API corriendo en: ${await app.getUrl()}`);
+   const port = process.env.SERVER_PORT || 3000;
+  const host = process.env.SERVER_HOST || '0.0.0.0';
+
+  await app.listen(port, host);
+  console.log(`🚀 API SERVICES is running on: http://${host}:${port}`);
 }
 bootstrap();
