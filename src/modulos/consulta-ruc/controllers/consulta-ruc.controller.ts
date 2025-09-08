@@ -1,10 +1,7 @@
-import { Controller, Post, Body, Get, Query, UsePipes, ValidationPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UsePipes, ValidationPipe, UseGuards, Param, BadRequestException } from '@nestjs/common';
 import { RUCService } from '../services/consulta-ruc.service';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RUCDTO } from '../dto/ruc.dto';
-import { Roles } from 'src/common/decorators/roles.decorator';
-import { Role } from 'src/common/enums/role.enum';
-import { Public } from 'src/common/decorators/public.decorator';
 import { ApiKeyGuard } from 'src/common/guards/apikey.guard';
 
 @UseGuards(ApiKeyGuard)
@@ -15,11 +12,13 @@ export class ConsultaRucController {
 
   constructor(private readonly rucService: RUCService) { }
 
-  // @Roles(Role.ADMINISTRADOR, Role.USUARIO_REGULAR, Role.USUARIO_PREMIUN)
-  // @Public()
-  @Get('consulta')
-  @UsePipes(new ValidationPipe({ transform: true }))
-  async consultarPorRuc(@Query() rucDto: RUCDTO) {
-    return this.rucService.obtenerDatosPorRuc(rucDto);
+  @Get(':ruc')
+async consultarPorRuc(@Param('ruc') ruc: string) {
+  // Validación manual simple
+  if (!ruc || !/^\d{13}$/.test(ruc)) {
+    throw new BadRequestException('RUC debe tener exactamente 13 dígitos numéricos');
   }
+  
+  return this.rucService.obtenerDatosPorRuc(ruc);
+}
 }

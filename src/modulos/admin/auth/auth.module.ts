@@ -7,6 +7,7 @@ import { AuthController } from './controller/auth.controller';
 import { JwtRefreshStrategy } from './strategies/refreshToken.strategy';
 import { UsuariosService } from '../usuarios/services/usuarios.service';
 import { PrismaModule } from 'src/prisma/prisma.module';
+import { PlanService } from '../plan/plan.service';
 
 @Module({
   imports: [
@@ -21,7 +22,7 @@ import { PrismaModule } from 'src/prisma/prisma.module';
     PrismaModule
 
   ],
-  providers: [ AuthService, UsuariosService, JwtStrategy, JwtRefreshStrategy],
+  providers: [ AuthService, UsuariosService, PlanService, JwtStrategy, JwtRefreshStrategy],
   controllers: [AuthController]
 })
 export class AuthModule {}

@@ -9,9 +9,10 @@ import { RolesPermisosService } from './roles/services/rolesPermisosService.serv
 import { AuthModule } from './auth/auth.module';
 import { ApiKeyService } from './apiKey/apiKey.service';
 import { ApiKeyController } from './apiKey/apikey.controller';
+import { PlanModule } from './plan/plan.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule],
+  imports: [PrismaModule, AuthModule, PlanModule],
   providers: [
     UsuariosService,
     RolesService,

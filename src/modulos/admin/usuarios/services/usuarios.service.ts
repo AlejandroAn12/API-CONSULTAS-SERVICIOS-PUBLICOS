@@ -4,11 +4,13 @@ import { UsuarioDTO } from '../dto/usuario.dto';
 import { HashUtil } from 'src/common/utils/hash.util';
 import { randomBytes } from 'crypto';
 import { Role } from 'src/common/enums/role.enum';
+import * as moment from 'moment-timezone';
+
 
 @Injectable()
 export class UsuariosService {
 
-    constructor(private readonly prismaService: PrismaService) { }
+    constructor(private readonly prisma: PrismaService) { }
 
 
     //Crear un nuevo usuario
@@ -20,7 +22,7 @@ export class UsuariosService {
 
 
         try {
-            const usuarioExiste = await this.prismaService.usuario.findUnique({
+            const usuarioExiste = await this.prisma.usuario.findUnique({
                 where: { email },
             });
 
@@ -28,7 +30,7 @@ export class UsuariosService {
                 throw new BadRequestException('El email ya está en uso, pruebe con otro.');
             }
 
-            const rol = await this.prismaService.rol.findFirst({
+            const rol = await this.prisma.rol.findFirst({
                 where: { nombre: Role.USUARIO }
             });
 
@@ -39,7 +41,7 @@ export class UsuariosService {
             //hashear el password antes de guardarlo
             const hash = await HashUtil.hashPassword(password);
 
-            const usuarioBD = await this.prismaService.usuario.create({
+            const usuarioBD = await this.prisma.usuario.create({
                 data: {
                     nombres,
                     roleId: rol.id,
@@ -49,7 +51,7 @@ export class UsuariosService {
             });
 
             //Crear registros en el apikey
-            await this.prismaService.apiKey.create({
+            await this.prisma.apiKey.create({
                 data: {
                     key: await newKey,
                     system,
@@ -75,7 +77,7 @@ export class UsuariosService {
     // Obtener todos los usuarios
     async obtenerUsuarios() {
         try {
-            const usuarios = await this.prismaService.usuario.findMany({
+            const usuarios = await this.prisma.usuario.findMany({
                 select: {
                     id: true,
                     nombres: true,
@@ -107,7 +109,7 @@ export class UsuariosService {
 
     async findByEmail(email: string) {
         try {
-            const usuario = await this.prismaService.usuario.findUnique({
+            const usuario = await this.prisma.usuario.findUnique({
                 where: { email },
             });
             if (!usuario) {
@@ -122,6 +124,72 @@ export class UsuariosService {
             // Manejo de errores genérico
             throw new BadRequestException('Ha ocurrido un error interno al obtener el usuario');
         }
+    }
+
+    //Informacion del perfil
+    async profile(userId: string) {
+
+        try {
+            const user = await this.prisma.usuario.findUnique({
+                where: { id: userId },
+                select: {
+                    nombres: true,
+                    email: true,
+                    estado: true,
+                    role: {
+                        select: {
+                            nombre: true
+                        }
+                    },
+                    suscripciones: {
+                        select: {
+                            plan: {
+                                select: {
+                                    nombre: true
+                                }
+                            },
+                            activa: true,
+                            fechaInicio: true,
+                            fechaFin: true
+                        }
+                    }
+                }
+            });
+
+            if (!user) {
+                throw new NotFoundException({
+                    statusCode: 404,
+                    message: 'Usuario no encontrado',
+                    codeError: 'USER_NOT_FOUND'
+                });
+            }
+            return user;
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            // Manejo de errores genérico
+            throw new BadRequestException('Ha ocurrido un error interno al obtener el usuario');
+        }
+    }
+
+    async getUserSubscription(userId: string) {
+        const suscripcion = await this.prisma.suscripcion.findFirst({
+            where: { usuarioId: userId, activa: true },
+            include: { plan: true },
+        });
+
+        if (!suscripcion) return null;
+
+        return {
+            ...suscripcion,
+            fechaInicioLocal: moment(suscripcion.fechaInicio)
+                .tz(suscripcion.timeZone)
+                .format('YYYY-MM-DD HH:mm'),
+            fechaFinLocal: moment(suscripcion.fechaFin)
+                .tz(suscripcion.timeZone)
+                .format('YYYY-MM-DD HH:mm'),
+        };
     }
 
 }

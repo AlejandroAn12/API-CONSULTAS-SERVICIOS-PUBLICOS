@@ -1,7 +1,7 @@
 import { HttpService } from "@nestjs/axios";
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
-import { Inject, Injectable } from "@nestjs/common";
+import { HttpException, HttpStatus, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { PlacaDTO } from "../dto/placa.dto";
 import { firstValueFrom } from "rxjs";
 import { ReportePagoDTO } from "../dto/reportePagos.dto";
@@ -11,7 +11,9 @@ export class PlacasService {
 
     private readonly urlExistePlaca = process.env.URL_EXISTE_PLACA;
 
-    private readonly urlDatosPlaca = process.env.URL_DATOS_PLACA;
+    private readonly urlDatosPlacaLite = process.env.URL_DATOS_PLACA_LITE;
+    private readonly urlDatosPlacaFull = process.env.URL_DATOS_PLACA_FULL;
+
 
     private readonly urlReportePago = process.env.URL_REPORTE_PAGO;
 
@@ -26,8 +28,8 @@ export class PlacasService {
 
     // Método para obtener datos de un vehículo por su placa
     // 1. Verificar existencia de la placa en el SRI
-    async obtenerDatosPorPlaca(placaDto: PlacaDTO): Promise<{ existe: string; data: any }> {
-        const placa = placaDto.placa.trim().toUpperCase();
+    async datosPlacaLite(placa: string): Promise<{ existe: string; data: any }> {
+        // const placa = placaDto.placa.trim().toUpperCase();
 
         const regex = /^[A-Z]{3}\d{4}$/;
         if (!regex.test(placa)) {
@@ -38,7 +40,6 @@ export class PlacasService {
         const cached = await this.cacheManager.get<{ existe: string; data: any }>(cacheKey);
 
         if (cached) {
-            console.log(`📦 Cache hit para Placa: ${placa}`);
             return cached;
         }
 
@@ -52,13 +53,13 @@ export class PlacasService {
             );
 
             if (response.data?.mensaje !== 'La placa existe') {
-                const result = { existe: 'La placa no existe en el sistema del SRI', data: null };
+                const result = { existe: 'La placa no fue encontrada', data: null };
                 await this.cacheManager.set(cacheKey, result, 60 * 10);
                 return result;
             }
 
             // 2. Obtener datos
-            const url2 = `${this.urlDatosPlaca}?numeroPlacaCampvCpn=${placa}`;
+            const url2 = `${this.urlDatosPlacaLite}?numeroPlacaCampvCpn=${placa}`;
             const response2 = await firstValueFrom(
                 this.httpService.get(url2, {
                     headers: { 'User-Agent': 'Mozilla/5.0' },
@@ -75,10 +76,51 @@ export class PlacasService {
         }
     }
 
+    async datosPlacaFull(placa: string) {
+        // const placa = dto.placa.trim().toUpperCase();
+
+        try {
+            const regex = /^[A-Z]{3}\d{4}$/;
+            if (!regex.test(placa)) {
+                throw new Error('Formato de placa inválido. Debe ser AAA0000.');
+            }
+
+            //Obtener datos
+            const url2 = `${this.urlDatosPlacaFull}/${placa}`;
+            const response = await firstValueFrom(
+                this.httpService.get(url2, {
+                    headers: { 'User-Agent': 'Mozilla/5.0' },
+                }),
+            );
+
+                return {
+                    data: response.data
+                };
+
+
+      
+
+        } catch (error) {
+            console.error(error);
+
+            if (error?.response?.status === 404) {
+                throw new NotFoundException({
+                    code: error.response.data.codigo,
+                    message: error.response.data.mensaje,
+                });
+            }
+
+            throw new HttpException('Error al consultar los datos en linea',
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+
+    }
+
     // Método para obtener el reporte de pagos de un vehículo por su placa
     // 1. Verificar existencia de la placa en el SRI
-    async obtenerReportePagos(placaDto: PlacaDTO): Promise<any> {
-        const placa = placaDto.placa.trim().toUpperCase();
+    async obtenerReportePagos(placa: string): Promise<any> {
+        placa.trim().toUpperCase();
 
         const regex = /^[A-Z]{3}\d{4}$/;
         if (!regex.test(placa)) {
@@ -128,11 +170,11 @@ export class PlacasService {
 
     // Método para obtener el reporte de pagos a detalle de un vehículo por su código de recaudación
     // 1. Verificar existencia de la placa en el SRI
-    async obtenerReportePagosDetalle(reportePagoDTO: ReportePagoDTO): Promise<any> {
-        const { codigoRecaudacion } = reportePagoDTO;
+    async obtenerReportePagosDetalle(codRecaudacion: number): Promise<any> {
+        // const { codigoRecaudacion } = reportePagoDTO;
 
         try {
-            const urlReportePagosDetalle = `${this.urlReportePagoDetalle}?codigoRecaudacion=${codigoRecaudacion}`;
+            const urlReportePagosDetalle = `${this.urlReportePagoDetalle}?codigoRecaudacion=${codRecaudacion}`;
             console.log('URL Detalle:', urlReportePagosDetalle);
 
             const response2 = await firstValueFrom(
@@ -157,8 +199,8 @@ export class PlacasService {
 
     // Método para obtener los valores pendientes de un vehículo por su placa
     // 1. Verificar existencia de la placa en el SRI
-    async obtenerValoresPendientes(placaDto: PlacaDTO): Promise<{ existe: string; data: any }> {
-        const placa = placaDto.placa.trim().toUpperCase();
+    async obtenerValoresPendientes(placa: string): Promise<{ existe: string; data: any }> {
+        placa.trim().toUpperCase();
 
         const regex = /^[A-Z]{3}\d{4}$/;
         if (!regex.test(placa)) {
@@ -169,7 +211,6 @@ export class PlacasService {
         const cached = await this.cacheManager.get<{ existe: string; data: any }>(cacheKey);
 
         if (cached) {
-            console.log(`📦 Cache hit para Placa: ${placa}`);
             return cached;
         }
 
@@ -189,7 +230,7 @@ export class PlacasService {
             }
 
             // 2. Obtener datos
-            const url2 = `${this.urlDatosPlaca}?numeroPlacaCampvCpn=${placa}`;
+            const url2 = `${this.urlDatosPlacaLite}?numeroPlacaCampvCpn=${placa}`;
             const response2 = await firstValueFrom(
                 this.httpService.get(url2, {
                     headers: { 'User-Agent': 'Mozilla/5.0' },

@@ -5,6 +5,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 // import { ApiKeyGuard } from './common/guards/api-key.guard.tsju';
 import { PrismaService } from './prisma/prisma.service';
+import { use } from 'passport';
+import { DateFormatInterceptor } from './common/interceptor/date-format.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -17,6 +19,7 @@ async function bootstrap() {
   // app.useGlobalGuards(new ApiKeyGuard(app.get(ConfigService), app.get(Reflector), app.get(PrismaService)));
 
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  app.useGlobalInterceptors(new DateFormatInterceptor);
   app.setGlobalPrefix('api/v1');
 
   const config = new DocumentBuilder()
@@ -42,7 +45,7 @@ async function bootstrap() {
       defaultModelsExpandDepth: -1,
     },
   });
-   const port = process.env.SERVER_PORT || 3000;
+  const port = process.env.SERVER_PORT || 3000;
   const host = process.env.SERVER_HOST || '0.0.0.0';
 
   await app.listen(port, host);

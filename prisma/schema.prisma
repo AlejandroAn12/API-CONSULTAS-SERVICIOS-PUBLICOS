@@ -27,6 +27,7 @@ model Usuario {
   role   Rol    @relation(fields: [roleId], references: [id]) // Usuario pertenece a un Rol
 
   apiKeys ApiKey[]
+  suscripciones Suscripcion[]
 }
 
 model Permiso {
@@ -48,7 +49,7 @@ model Rol {
   updatedAt   DateTime @updatedAt
 
   rolPermisos RolesPermisos[]
-  usuarios    Usuario[] // Un Rol puede tener muchos usuarios
+  usuarios    Usuario[]
 }
 
 model RolesPermisos {
@@ -70,4 +71,30 @@ model ApiKey {
 
   usuarioId String
   usuario   Usuario @relation(fields: [usuarioId], references: [id])
+}
+
+model Plan {
+  id          String   @id @default(uuid())
+  nombre      String   // Ej: "Básico", "Pro", "Enterprise"
+  descripcion String?
+  precio      Float    // Valor monetario (ej: 10.99)
+  duracionDias Int     // Duración en días (ej: 30, 365)
+  estado      Boolean  @default(true) // Activo/Inactivo
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  suscripciones Suscripcion[]
+}
+
+model Suscripcion {
+  id           String   @id @default(uuid())
+  usuarioId    String
+  planId       String
+  fechaInicio  DateTime @default(now())
+  fechaFin     DateTime
+  activa       Boolean  @default(true)
+  timeZone    String   // ej: "America/Guayaquil", "Europe/Madrid"
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+  plan    Plan    @relation(fields: [planId], references: [id])
 }

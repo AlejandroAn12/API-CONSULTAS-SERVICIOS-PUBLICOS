@@ -2,19 +2,39 @@ version: '3.8'
 
 services:
   app:
-    build: .
+    build: 
+      context: .
+      target: ${BUILD_TARGET:-production}  # development o production
     ports:
-      - "3000:3000"
+      - "${APP_PORT:-3000}:3000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/fakpidb
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=3000
+      - NODE_ENV=${NODE_ENV:-production}
     depends_on:
       db:
         condition: service_healthy
-    # Comando más simple
-    command: sh -c "npx prisma migrate deploy && node dist/main"
+    command: >
+       sh -c "
+        until npx prisma migrate deploy; do
+        echo '🕐 Esperando a que la base de datos esté lista...';
+        sleep 2;
+        done;
+        
+        if [ \"$NODE_ENV\" = \"development\" ]; then
+          echo '🚀 MODO DESARROLLO: Hot reload activado';
+          npx prisma generate;
+          npm run start:dev;
+        else
+          echo '🚀 MODO PRODUCCIÓN';
+          node dist/main;
+        fi
+        "
     volumes:
       - .:/app
       - /app/node_modules
+    restart: unless-stopped
 
   db:
     image: postgres:15-alpine
@@ -22,10 +42,8 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=fakpidb
-      - SERVER_HOST=0.0.0.0  # ← Agrega esto
-      - SERVER_PORT=3000 
     ports:
-      - "5435:5432"
+      - "${DB_PORT:-5435}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -33,6 +51,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
 
 volumes:
   postgres_data:

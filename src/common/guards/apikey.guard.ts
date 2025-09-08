@@ -4,7 +4,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class ApiKeyGuard implements CanActivate {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -17,11 +17,27 @@ export class ApiKeyGuard implements CanActivate {
     });
 
     if (!key || !key.isActive) {
-      throw new UnauthorizedException('Invalid API Key');
+      console.log('Key', key)
+      throw new UnauthorizedException({
+        statusCode: 401,
+        message: 'API KEY inválida, si tiene inconvenientes contacte a nuestro equipo de soporte.',
+        errorCode: 'INVALID_API_KEY'
+      });
     }
 
     if (new Date() > key.expiresAt) {
-      throw new UnauthorizedException('La API Key proporcionada ha caducado. Renueva tu clave para mantener el acceso a los servicios.');
+      await this.prisma.apiKey.update({
+        where: {id: key.id},
+        data:{
+          isActive: false
+        }
+      });
+
+      throw new UnauthorizedException({
+        statusCode: 401,
+        message: 'La API Key proporcionada ha caducado. Renueva tu clave para mantener el acceso a los servicios.',
+        errorCode: 'EXPIRED_API_KEY'
+      });
     }
 
     return true;

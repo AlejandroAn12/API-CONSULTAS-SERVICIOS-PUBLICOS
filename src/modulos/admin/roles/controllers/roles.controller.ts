@@ -1,10 +1,13 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { RolesService } from '../services/roles.service';
 import { RolDTO } from '../dto/rol.dto';
 import { ApiExcludeController, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 
 ApiExcludeController() // Excluye el controlador de la documentación de Swagger
 @ApiTags('Roles')
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('roles')
 export class RolesController {
 

@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from "@nestjs/common";
+import { BadRequestException, Controller, Get, Param, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { PlacaDTO } from "../dto/placa.dto";
 import { PlacasService } from "../service/consulta-placas.service";
@@ -13,27 +13,47 @@ export class ConsultaVehiculoController {
 
     constructor(private readonly placasService: PlacasService) { }
 
-    @Get('consulta-placa')
+    @Get('lite/:placa')
     @ApiOperation({ summary: 'Consulta datos de un vehiculo por número de placa' })
-    async consultarPorNumero(@Query() placaDto: PlacaDTO) {
-        return this.placasService.obtenerDatosPorPlaca(placaDto);
+    async consultarPorNumeroLite(@Param('placa') placa: string) {
+        placa.trim().toUpperCase();
+        // Validación manual simple
+        if (!placa || !/^[A-Z]{3}\d{4}$/.test(placa)) {
+            throw new BadRequestException('La placa debe tener el formato AAA0000');
+        }
+        return this.placasService.datosPlacaLite(placa);
     }
 
-    @Get('pagos')
+    @Get('all/:placa')
+    @ApiOperation({ summary: 'Consulta datos de un vehiculo por número de placa' })
+    async consultarPorNumeroFull(@Param('placa') placa: string) {
+        placa.trim().toUpperCase();
+        // Validación manual simple
+        if (!placa || !/^[A-Z]{3}\d{4}$/.test(placa)) {
+            throw new BadRequestException('La placa debe tener el formato AAA0000');
+        }
+        return this.placasService.datosPlacaFull(placa);
+    }
+
+    @Get('pagos/:placa')
     @ApiOperation({ summary: 'Consulta reporte de pagos de vehiculo por placa' })
-    async consultarReportePagos(@Query() placaDto: PlacaDTO) {
-        return this.placasService.obtenerReportePagos(placaDto);
+    async consultarReportePagos(@Param('placa') placa: string) {
+        // Validación manual simple
+        if (!placa || !/^[A-Z]{3}\d{4}$/.test(placa)) {
+            throw new BadRequestException('La placa debe tener el formato AAA0000');
+        }
+        return this.placasService.obtenerReportePagos(placa);
     }
 
-    @Get('detalle-pagos')
+    @Get('pagos/detalle/:codRecaudacion')
     @ApiOperation({ summary: 'Consulta reporte de pagos a detalle del vehiculo' })
-    async consultarPagosDetalle(@Query() reportePagoDTO: ReportePagoDTO) {
-        return this.placasService.obtenerReportePagosDetalle(reportePagoDTO);
+    async consultarPagosDetalle(@Param('codRecaudacion') codRecaudacion: number) {
+        return this.placasService.obtenerReportePagosDetalle(codRecaudacion);
     }
 
-    @Get('valores-pendientes')
+    @Get('pagos/valorPendiente/:placa')
     @ApiOperation({ summary: 'Consulta valores pendientes de un vehiculo por número de placa' })
-    async consultarValoresPendientes(@Query() placaDto: PlacaDTO) {
-        return this.placasService.obtenerValoresPendientes(placaDto);
+    async consultarValoresPendientes(@Param('placa') placa: string) {
+        return this.placasService.obtenerValoresPendientes(placa);
     }
 }

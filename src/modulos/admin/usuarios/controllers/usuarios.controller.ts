@@ -1,7 +1,6 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { UsuariosService } from '../services/usuarios.service';
-import { ApiExcludeController, ApiTags } from '@nestjs/swagger';
-import { Public } from 'src/common/decorators/public.decorator';
+import { ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { UsuarioDTO } from '../dto/usuario.dto';
@@ -25,5 +24,17 @@ export class UsuariosController {
     @Get('obtener')
     obtenerUsuarios() {
         return this.usuarioService.obtenerUsuarios();
+    }
+
+    //Obtener supcripciones de usuarios
+    @Get('subcripciones/:userId')
+    getUserSubscription(@Param('userId') userId: string){
+        return this.usuarioService.getUserSubscription(userId);
+    }
+
+    @Get('profile')
+    profile(@Req() req) {
+        const user = req.user.sub;
+        return this.usuarioService.profile(user);
     }
 }

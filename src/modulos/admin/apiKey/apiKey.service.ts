@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -23,44 +23,113 @@ export class ApiKeyService {
 
   // 🔹 Listar API Keys de un usuario
   async listByUser(userId: string) {
-    const usuario = await this.prisma.usuario.findUnique({
-      where: { id: userId },
-      include: { apiKeys: true },
-    });
+    try {
+      const usuario = await this.prisma.usuario.findUnique({
+        where: { id: userId },
+        include: { apiKeys: true },
+      });
 
-    if (!usuario) throw new NotFoundException('Usuario no encontrado');
+      if (!usuario) throw new NotFoundException('Usuario no encontrado');
 
-    return usuario.apiKeys;
+      return usuario.apiKeys;
+    } catch (error) {
+      console.error(error)
+    }
   }
 
   // 🔹 Revocar (desactivar) una API Key
   async revoke(apiKeyId: number, userId: string) {
-    const apiKey = await this.prisma.apiKey.findFirst({
-      where: { id: apiKeyId, usuarioId: userId },
-    });
+    try {
+      const apiKey = await this.prisma.apiKey.findFirst({
+        where: { id: apiKeyId, usuarioId: userId, isActive: true },
+      });
 
-    if (!apiKey) throw new NotFoundException('API Key no encontrada');
+      if (!apiKey) {
+        throw new NotFoundException('API Key no encontrada o ya revocada');
+      }
 
-    return this.prisma.apiKey.update({
-      where: { id: apiKeyId },
-      data: { isActive: false },
-    });
+      await this.prisma.apiKey.update({
+        where: { id: apiKeyId },
+        data: { isActive: false },
+      });
+
+      return {
+        message: 'La key ha sido revocada'
+      }
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Ha ocurrido un error interno al desactivar la key');
+    }
   }
+
 
   // 🔹 Renovar una API Key (extiende la vigencia)
   async renew(apiKeyId: number, userId: string, days: number) {
-    const apiKey = await this.prisma.apiKey.findFirst({
-      where: { id: apiKeyId, usuarioId: userId, isActive: true },
-    });
 
-    if (!apiKey) throw new NotFoundException('API Key no encontrada o inactiva');
+    try {
+      const apiKey = await this.prisma.apiKey.findFirst({
+        where: { id: apiKeyId, usuarioId: userId},
+      });
 
-    return this.prisma.apiKey.update({
-      where: { id: apiKeyId },
-      data: {
-        expiresAt: new Date(Date.now() + days * 24 * 60 * 60 * 1000),
-      },
-    });
+      if (!apiKey) throw new NotFoundException('API Key no encontrada o inactiva');
+
+      await this.prisma.apiKey.update({
+        where: { id: apiKeyId },
+        data: {
+          isActive: true,
+          expiresAt: new Date(Date.now() + days * 24 * 60 * 60 * 1000),
+        },
+      });
+
+      return {
+        message: 'Key renovada por ' + days
+      }
+
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Ha ocurrido un error interno al renovar la key');
+    }
+  }
+
+  async getKeyActive(userId: string) {
+
+    try {
+      const user = await this.prisma.usuario.findUnique({
+        where: { id: userId },
+        select: { id: true }
+      });
+
+      if (!user) {
+        throw new NotFoundException({
+          statusCode: 404,
+          message: 'Usuario no encontrado o inválido',
+          errorCode: 'USER_NOT_FOUND'
+        });
+      }
+
+      const keyUser = await this.prisma.apiKey.findFirst({
+        where: { usuarioId: userId, isActive: true }
+      });
+
+      if (!keyUser) {
+        throw new NotFoundException({
+          statusCode: 404,
+          message: 'No se encontraron keys activas',
+          errorCode: 'KEY_NOT_FOUND'
+        })
+      }
+      return keyUser;
+
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Ha ocurrido un error interno al obtener la key');
+    }
   }
 
   // // Listar API Keys de un usuario

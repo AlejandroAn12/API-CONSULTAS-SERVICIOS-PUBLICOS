@@ -34,6 +34,7 @@ import { PrismaModule } from './prisma/prisma.module';
     ConsultaVehiculosModule,
     AdminModule,
     PrismaModule,
+
     
   ],
   controllers: [],

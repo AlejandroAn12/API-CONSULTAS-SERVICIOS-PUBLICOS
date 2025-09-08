@@ -1,7 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsNotEmpty, IsString } from "class-validator";
 
-export class UsuarioDTO {
+export class IRegister {
     @ApiProperty({ description: 'Nombres', example: 'Juan Fernando' })
     @IsNotEmpty({ message: 'El nombre no puede estar vacío' })
     nombres: string;
@@ -15,5 +15,8 @@ export class UsuarioDTO {
     password: string;
 
     @IsString()
-    system: string;
+    planId: string;
+
+    @IsString()
+    timeZone: string;
 }

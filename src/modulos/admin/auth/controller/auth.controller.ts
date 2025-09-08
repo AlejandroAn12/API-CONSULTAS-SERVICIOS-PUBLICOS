@@ -1,21 +1,29 @@
-import { Controller, Post, Body, UseGuards, Req, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Req, UnauthorizedException, Get } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
 import { LoginDTO } from '../dto/login.dto';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { TokensDto } from '../dto/tokens.dto';
 import { RequestWithUser } from 'src/common/types/request-with-user';
 import { Public } from 'src/common/decorators/public.decorator';
+import { IRegister } from '../dto/register.dto';
+import { PlanService } from '../../plan/plan.service';
 
 @ApiTags('Autenticación')
 @ApiBearerAuth('jwt-auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService, private readonly planService: PlanService) { }
 
   @Public()
   @Post('login')
   async login(@Body() dto: LoginDTO): Promise<TokensDto> {
     return this.authService.login(dto);
+  }
+
+  @Public()
+  @Post('register')
+  async register(@Body() dto: IRegister) {
+    return this.authService.register(dto);
   }
 
 
@@ -32,5 +40,10 @@ export class AuthController {
     }
 
     return this.authService.refreshTokens(sub, refreshToken);
+  }
+
+  @Get('plans')
+  getAllPlans() {
+    return this.planService.getAllPlans();
   }
 }

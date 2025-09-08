@@ -1,8 +1,8 @@
-import { Injectable, Inject, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, Inject, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, NotFoundError } from 'rxjs';
 import { RUCDTO } from '../dto/ruc.dto';
 
 @Injectable()
@@ -15,14 +15,13 @@ export class RUCService {
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) { }
 
-  async obtenerDatosPorRuc(rucDTO: RUCDTO): Promise<{ existe: boolean; data: any }> {
+  async obtenerDatosPorRuc(ruc: string): Promise<{ existe: boolean; data: any }> {
 
-    const { ruc } = rucDTO;
+    // const { ruc } = rucDTO;
     const cacheKey = `sri:ruc:${ruc}`;
     const cached = await this.cacheManager.get<{ existe: boolean; data: any }>(cacheKey);
 
     if (cached) {
-      console.log(`📦 Cache hit para RUC: ${ruc}`);
       return cached;
     }
 
@@ -32,9 +31,11 @@ export class RUCService {
       const existe = existeResponse.data === true;
 
       if (!existe) {
-        const result = { existe: false, data: [] };
-        await this.cacheManager.set(cacheKey, result, 60 * 10); // cache 10 mins
-        return result;
+        throw new NotFoundException({
+          statusCode: 404,
+          message: 'Información no encontrada',
+          errorCode:'DATA_NOT_FOUND'
+        })
       }
 
       const url = `${this.baseUrl}?ruc=${ruc}`;
@@ -46,9 +47,12 @@ export class RUCService {
       return result;
 
     } catch (error) {
-      console.error('❌ Error al consultar el SRI:', error.message);
+
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       throw new HttpException(
-        'Error al consultar los datos en el SRI',
+        'Error al consultar los datos en linea',
         error?.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
