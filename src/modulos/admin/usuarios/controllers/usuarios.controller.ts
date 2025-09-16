@@ -27,10 +27,10 @@ export class UsuariosController {
     }
 
     //Obtener supcripciones de usuarios
-    @Get('subcripciones/:userId')
-    getUserSubscription(@Param('userId') userId: string){
-        return this.usuarioService.getUserSubscription(userId);
-    }
+    // @Get('subcripciones/:userId')
+    // getUserSubscription(@Param('userId') userId: string){
+    //     return this.usuarioService.getUserSubscription(userId);
+    // }
 
     @Get('profile')
     profile(@Req() req) {

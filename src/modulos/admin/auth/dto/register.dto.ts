@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsString } from "class-validator";
+import { IsNotEmpty, IsNumber, IsString } from "class-validator";
 
 export class IRegister {
     @ApiProperty({ description: 'Nombres', example: 'Juan Fernando' })
@@ -14,9 +14,9 @@ export class IRegister {
     @IsNotEmpty({ message: 'El password no puede estar vacío' })
     password: string;
 
-    @IsString()
-    planId: string;
+    // @IsString()
+    // planId: string;
 
-    @IsString()
-    timeZone: string;
+    // @IsNumber()
+    // timeZoneId: number;
 }

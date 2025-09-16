@@ -27,17 +27,10 @@ model Usuario {
   role   Rol    @relation(fields: [roleId], references: [id]) // Usuario pertenece a un Rol
 
   apiKeys ApiKey[]
-  suscripciones Suscripcion[]
-}
+  wallet  Wallet?
+  // suscripciones Suscripcion[]
 
-model Permiso {
-  id          String          @id @default(uuid())
-  nombre      String?
-  descripcion String?
-  estado      Boolean         @default(true)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  rolPermisos RolesPermisos[]
+  Consumo Consumo[]
 }
 
 model Rol {
@@ -48,17 +41,7 @@ model Rol {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  rolPermisos RolesPermisos[]
-  usuarios    Usuario[]
-}
-
-model RolesPermisos {
-  rolId     String
-  permisoId String
-  rol       Rol     @relation(fields: [rolId], references: [id])
-  permiso   Permiso @relation(fields: [permisoId], references: [id])
-
-  @@id([rolId, permisoId])
+  usuarios Usuario[]
 }
 
 model ApiKey {
@@ -67,34 +50,143 @@ model ApiKey {
   system    String // nombre del sistema que consume tu API
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
-  expiresAt DateTime   // fecha de expiración
+  expiresAt DateTime // fecha de expiración
 
   usuarioId String
   usuario   Usuario @relation(fields: [usuarioId], references: [id])
 }
 
-model Plan {
-  id          String   @id @default(uuid())
-  nombre      String   // Ej: "Básico", "Pro", "Enterprise"
-  descripcion String?
-  precio      Float    // Valor monetario (ej: 10.99)
-  duracionDias Int     // Duración en días (ej: 30, 365)
-  estado      Boolean  @default(true) // Activo/Inactivo
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model Wallet {
+  id        String   @id @default(uuid())
+  usuarioId String   @unique
+  balance   Float    @default(0) // saldo actual en USD
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  suscripciones Suscripcion[]
+  usuario       Usuario       @relation(fields: [usuarioId], references: [id])
+  transacciones Transaccion[]
 }
 
-model Suscripcion {
-  id           String   @id @default(uuid())
-  usuarioId    String
-  planId       String
-  fechaInicio  DateTime @default(now())
-  fechaFin     DateTime
-  activa       Boolean  @default(true)
-  timeZone    String   // ej: "America/Guayaquil", "Europe/Madrid"
+model PaypalOrder {
+  id          String    @id @default(cuid())
+  orderId     String    @unique
+  usuarioId   String
+  amount      Float
+  currency    String
+  status      String // CREATED, APPROVED, COMPLETED, FAILED
+  approvalUrl String
+  captureId   String?
+  error       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  capturedAt  DateTime?
 
-  usuario Usuario @relation(fields: [usuarioId], references: [id])
-  plan    Plan    @relation(fields: [planId], references: [id])
+  @@map("paypal_orders")
+}
+
+model Transaccion {
+  id          String   @id @default(uuid())
+  tipo        String // "RECARGA", "CONSUMO"
+  monto       Float // Ej: 5.00 recarga, -0.40 consumo
+  descripcion String?
+  createdAt   DateTime @default(now())
+
+  walletId String
+  wallet   Wallet @relation(fields: [walletId], references: [id])
+}
+
+model EndpointPrecio {
+  id        String   @id @default(uuid())
+  endpoint  String // "/api/resource"
+  method    String // "GET", "POST"
+  costo     Float // Ej: 0.004 -> 0.4 ctvs
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Consumo Consumo[]
+}
+
+model Setting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Consumo {
+  id            Int      @id @default(autoincrement())
+  usuarioId     String
+  endpointId    String
+  costo         Float // Precio del endpoint
+  saldoRestante Float // Saldo del usuario después de este consumo
+  fecha         DateTime @default(now())
+
+  usuario  Usuario        @relation(fields: [usuarioId], references: [id])
+  endpoint EndpointPrecio @relation(fields: [endpointId], references: [id])
+}
+
+// model Plan {
+//   id           String   @id @default(uuid())
+//   nombre       String
+//   descripcion  String?
+//   precio       Float
+//   duracionDias Int
+//   estado       Boolean  @default(true)
+//   createdAt    DateTime @default(now())
+//   updatedAt    DateTime @updatedAt
+
+//   // Relación a los límites de peticiones permitidas
+//   limites LimitePeticion[]
+
+//   suscripciones Suscripcion[]
+// }
+
+// model Suscripcion {
+//   id          String   @id @default(uuid())
+//   usuarioId   String
+//   planId      String
+//   fechaInicio DateTime @default(now())
+//   fechaFin    DateTime
+//   activa      Boolean  @default(true)
+//   timeZoneId  Int
+
+//   usuario  Usuario  @relation(fields: [usuarioId], references: [id])
+//   plan     Plan     @relation(fields: [planId], references: [id])
+//   timezone Timezone @relation(fields: [timeZoneId], references: [id])
+
+//   consumos ConsumoPeticion[]
+// }
+
+// model LimitePeticion {
+//   id        Int      @id @default(autoincrement())
+//   endpoint  String   // Ej: "/api/resource"
+//   method    String   // Ej: "GET", "POST"
+//   maximo    Int      // Límite que el plan permite
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+
+//   planId String
+//   plan   Plan @relation(fields: [planId], references: [id])
+// }
+
+// model ConsumoPeticion {
+//   id          Int      @id @default(autoincrement())
+//   endpoint    String
+//   method      String
+//   usado       Int      @default(0) // Cuántas veces ya consumió
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime @updatedAt
+
+//   suscripcionId String
+//   suscripcion   Suscripcion @relation(fields: [suscripcionId], references: [id])
+// }
+
+model Timezone {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Suscripcion Suscripcion[]
 }

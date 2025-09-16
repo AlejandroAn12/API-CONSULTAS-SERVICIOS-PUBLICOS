@@ -6,13 +6,12 @@ import { TokensDto } from '../dto/tokens.dto';
 import { RequestWithUser } from 'src/common/types/request-with-user';
 import { Public } from 'src/common/decorators/public.decorator';
 import { IRegister } from '../dto/register.dto';
-import { PlanService } from '../../plan/plan.service';
 
 @ApiTags('Autenticación')
 @ApiBearerAuth('jwt-auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService, private readonly planService: PlanService) { }
+  constructor(private readonly authService: AuthService) { }
 
   @Public()
   @Post('login')
@@ -42,8 +41,8 @@ export class AuthController {
     return this.authService.refreshTokens(sub, refreshToken);
   }
 
-  @Get('plans')
-  getAllPlans() {
-    return this.planService.getAllPlans();
-  }
+  // @Get('plans')
+  // getAllPlans() {
+  //   return this.planService.getAllPlans();
+  // }
 }

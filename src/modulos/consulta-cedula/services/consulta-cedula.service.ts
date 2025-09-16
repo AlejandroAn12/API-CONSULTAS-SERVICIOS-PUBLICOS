@@ -28,7 +28,6 @@ export class CedulaService {
       // AxiosResponse trae { data, status, ... }
       const data = response.data;
 
-      console.log('RESPONSE', response)
 
       if (data === '') {
         throw new NotFoundException('Información no encontrada')

@@ -4,25 +4,24 @@ import { UsuariosController } from './usuarios/controllers/usuarios.controller';
 import { RolesController } from './roles/controllers/roles.controller';
 import { RolesService } from './roles/services/roles.service';
 import { PrismaModule } from 'src/prisma/prisma.module';
-import { RolesPermisosController } from './roles/controllers/roles-permisos.controller';
-import { RolesPermisosService } from './roles/services/rolesPermisosService.service';
 import { AuthModule } from './auth/auth.module';
 import { ApiKeyService } from './apiKey/apiKey.service';
 import { ApiKeyController } from './apiKey/apikey.controller';
 import { PlanModule } from './plan/plan.module';
+import { WalletModule } from './wallet/wallet.module';
+import { SettingModule } from './settings/setting.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, PlanModule],
+
+  imports: [PrismaModule, AuthModule, PlanModule, WalletModule, SettingModule],
   providers: [
     UsuariosService,
     RolesService,
-    RolesPermisosService,
     ApiKeyService
   ],
   controllers: [
     UsuariosController,
     RolesController,
-    RolesPermisosController,
     ApiKeyController
   ]
 })

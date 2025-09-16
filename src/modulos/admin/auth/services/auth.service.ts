@@ -64,74 +64,67 @@ export class AuthService {
   }
 
   //Registro
-  async register(dto: IRegister) {
-    const { nombres, email, password, planId, timeZone } = dto;
-    const newKey = randomBytes(32).toString('hex');
+async register(dto: IRegister) {
+  const { nombres, email, password } = dto;
+  const durationDays = 30;
+  const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+  const newKey = randomBytes(32).toString('hex');
 
+  try {
+    // Seleccionar rol por defecto
+    const defaultRoleId = await this.prisma.rol.findFirst({
+      where: { nombre: Role.USUARIO },
+      select: { id: true }
+    });
 
+    // Hashear contraseña
+    const hashedPassword = await HashUtil.hashPassword(password);
 
-    try {
-      //Seleccionar rol por defecto
-      const defaultRoleId = await this.prisma.rol.findFirst({
-        where: { nombre: Role.TRIAL },
-        select: {
-          id: true
-        }
-      });
+    // Crear usuario
+    const usuario = await this.prisma.usuario.create({
+      data: {
+        nombres,
+        email,
+        password: hashedPassword,
+        roleId: defaultRoleId?.id ?? '',
+      },
+    });
 
+    // 🎁 Obtener bono de bienvenida desde la tabla Setting
+    const bonoSetting = await this.prisma.setting.findUnique({
+      where: { key: "welcome_bonus" }
+    });
 
-      // Validar plan
-      const plan = await this.prisma.plan.findUnique({where: { id: planId } });
-      if (!plan) throw new NotFoundException({
-        statusCode: 404,
-        message: 'Plan no encontrado',
-        errorCode: 'PLAN_NOT_FOUND'
-      });
+    const bonoBienvenida = bonoSetting ? Number(bonoSetting.value) : 0;
 
+    // Crear wallet con el bono
+    await this.prisma.wallet.create({
+      data: {
+        usuarioId: usuario.id,
+        balance: bonoBienvenida,
+      },
+    });
 
-      // Crear usuario
-      const hashedPassword = await HashUtil.hashPassword(password);
-      const usuario = await this.prisma.usuario.create({
-        data: {
-          nombres,
-          email,
-          password: hashedPassword,
-          roleId: defaultRoleId?.id ?? '',
-        },
-      });
+    // Crear API Key inicial
+    await this.prisma.apiKey.create({ 
+      data: {
+        key: newKey,
+        system: 'REST API',
+        usuarioId: usuario.id,
+        expiresAt: expiresAt
+      }
+    });
 
-      // Calcular fechas en UTC
-      const fechaInicio = new Date();
-      const fechaFin = moment.utc(fechaInicio).add(plan.duracionDias, 'days').toDate();
-
-
-      // Crear suscripción
-      await this.prisma.suscripcion.create({
-        data: {
-          usuarioId: usuario.id,
-          planId: plan.id,
-          fechaInicio,   // en UTC
-          fechaFin,      // en UTC
-          activa: true,
-          timeZone,      // guardamos el timezone del usuario
-        },
-      });
-
-      await this.prisma.apiKey.create({
-        data: {
-          key: await newKey,
-          system: 'REST API',
-          usuarioId: usuario.id,
-          expiresAt: fechaFin
-        }
-      })
-      return {
-        message: 'Registro exitoso, tu key API ha sido generada recuerda que es única y tienes ' + plan.duracionDias + ' días para usarla.',
-      };
-    } catch (error) {
-      console.error('ERROR => ', error)
-    }
+    return {
+      message: `Registro exitoso ✅ Se ha acreditado un bono de bienvenida de $${bonoBienvenida} a tu cuenta`,
+    };
+  } catch (error) {
+    console.error('ERROR => ', error);
+    throw error;
   }
+}
+
+
 
   async generateTokens(userId: string, email: string, role: string): Promise<TokensDto> {
     const [accessToken, refreshToken] = await Promise.all([

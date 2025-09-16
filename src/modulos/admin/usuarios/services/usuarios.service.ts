@@ -16,9 +16,9 @@ export class UsuariosService {
     //Crear un nuevo usuario
     async crearUsuario(usuarioDto: UsuarioDTO) {
         const durationDays = 15;
+        const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
         const { nombres, email, password, system } = usuarioDto;
         const newKey = randomBytes(32).toString('hex');
-        const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
 
 
         try {
@@ -141,16 +141,9 @@ export class UsuariosService {
                             nombre: true
                         }
                     },
-                    suscripciones: {
+                    wallet:{
                         select: {
-                            plan: {
-                                select: {
-                                    nombre: true
-                                }
-                            },
-                            activa: true,
-                            fechaInicio: true,
-                            fechaFin: true
+                            balance: true
                         }
                     }
                 }
@@ -173,23 +166,23 @@ export class UsuariosService {
         }
     }
 
-    async getUserSubscription(userId: string) {
-        const suscripcion = await this.prisma.suscripcion.findFirst({
-            where: { usuarioId: userId, activa: true },
-            include: { plan: true },
-        });
+    // async getUserSubscription(userId: string) {
+    //     const suscripcion = await this.prisma.suscripcion.findFirst({
+    //         where: { usuarioId: userId, activa: true },
+    //         include: { plan: true },
+    //     });
 
-        if (!suscripcion) return null;
+    //     if (!suscripcion) return null;
 
-        return {
-            ...suscripcion,
-            fechaInicioLocal: moment(suscripcion.fechaInicio)
-                .tz(suscripcion.timeZone)
-                .format('YYYY-MM-DD HH:mm'),
-            fechaFinLocal: moment(suscripcion.fechaFin)
-                .tz(suscripcion.timeZone)
-                .format('YYYY-MM-DD HH:mm'),
-        };
-    }
+    //     return {
+    //         ...suscripcion,
+    //         fechaInicioLocal: moment(suscripcion.fechaInicio)
+    //             .tz(suscripcion.timeZone)
+    //             .format('YYYY-MM-DD HH:mm'),
+    //         fechaFinLocal: moment(suscripcion.fechaFin)
+    //             .tz(suscripcion.timeZone)
+    //             .format('YYYY-MM-DD HH:mm'),
+    //     };
+    // }
 
 }
