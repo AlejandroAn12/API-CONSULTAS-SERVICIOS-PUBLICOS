@@ -32,6 +32,7 @@ export class PaypalService {
     }
 
     // Crear orden de recarga y guardar en base de datos
+    // `${this.config.frontendUrl}/recarga/exito?usuarioId=${usuarioId}`
     async createRechargeOrder(usuarioId: string, rechargeData: {
         amount: number;
         currency: string;
@@ -59,7 +60,7 @@ export class PaypalService {
                     brand_name: this.config.brandName,
                     landing_page: 'BILLING',
                     user_action: 'PAY_NOW',
-                    return_url: `${this.config.frontendUrl}/recarga/exito?usuarioId=${usuarioId}`,
+                    return_url: `${this.config.frontendUrl}/d/dashboard`,
                     cancel_url: `${this.config.frontendUrl}/recarga/cancelada`,
                 }
             });
