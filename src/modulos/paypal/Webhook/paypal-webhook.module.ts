@@ -14,7 +14,23 @@ import { PaypalConfigProvider } from 'src/common/providers/paypal/paypal.provide
     providers: [
         PaypalWebhookService,
         PaypalService,
-        PaypalConfigProvider, // Añadir el provider de configuración
+        PaypalConfigProvider,
+        {
+            provide: 'PAYPAL_CLIENT_ID',
+            useValue: process.env.PAYPAL_CLIENT_ID,
+        },
+        {
+            provide: 'PAYPAL_CLIENT_SECRET',
+            useValue: process.env.PAYPAL_CLIENT_SECRET,
+        },
+        {
+            provide: 'PAYPAL_WEBHOOK_ID',
+            useValue: process.env.PAYPAL_WEBHOOK_ID,
+        },
+        {
+            provide: 'PAYPAL_ENVIRONMENT',
+            useValue: process.env.PAYPAL_ENVIRONMENT || 'sandbox',
+        }, // Añadir el provider de configuración
     ],
     exports: [PaypalWebhookService],
 })

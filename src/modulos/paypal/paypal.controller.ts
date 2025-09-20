@@ -45,7 +45,7 @@ export class PaypalController {
     ) {
         try {
             const usuarioId = req.user.sub;
-            const result = await this.paypalService.verifyAndCaptureOrder(orderId, usuarioId);
+            const result = await this.paypalService.verifyAndCaptureOrder(orderId/*, usuarioId*/);
 
             return {
                 success: true,
@@ -91,7 +91,7 @@ export class PaypalController {
 
             if (order.status === 'APPROVED') {
                 // Capturar automáticamente
-                const result = await this.paypalService.verifyAndCaptureOrder(orderId, usuarioId);
+                const result = await this.paypalService.verifyAndCaptureOrder(orderId/*, usuarioId*/);
 
                 return {
                     success: true,

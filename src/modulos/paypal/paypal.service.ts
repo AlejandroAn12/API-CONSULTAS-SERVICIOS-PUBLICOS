@@ -1,5 +1,5 @@
 // paypal/paypal.service.ts
-import { Injectable, Inject, BadRequestException } from '@nestjs/common';
+import { Injectable, Inject, BadRequestException, NotFoundException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import * as paypal from '@paypal/checkout-server-sdk';
@@ -87,7 +87,7 @@ export class PaypalService {
     }
 
     // Verificar y capturar orden
-    async verifyAndCaptureOrder(orderId: string, usuarioId: string): Promise<any> {
+    async verifyAndCaptureOrder(orderId: string): Promise<any> {
         try {
 
             // Verificar si la orden existe en nuestra DB
@@ -99,9 +99,17 @@ export class PaypalService {
                 throw new Error('Orden no encontrada');
             }
 
-            if (dbOrder.usuarioId !== usuarioId) {
-                throw new Error('No autorizado para esta orden');
+            const usuarioExisteDB = await this.prisma.usuario.findUnique({
+                where: {id: dbOrder.usuarioId}
+            });
+
+            if(!usuarioExisteDB){
+                throw new BadRequestException('El usuario asociado a la orden no existe, no se puede procesar la recarga');
             }
+
+            // if (dbOrder.usuarioId !== usuarioId) {
+            //     throw new Error('No autorizado para esta orden');
+            // }
 
             if (dbOrder.status === 'COMPLETED') {
                 throw new Error('Esta orden ya fue procesada');
@@ -123,7 +131,7 @@ export class PaypalService {
             const captureResult = captureResponse.result;
 
             if (captureResult.status !== 'COMPLETED') {
-                throw new Error('El pago no fue completado exitosamente');
+                throw new Error('El pago no fue completado');
             }
 
             // Procesar la recarga
@@ -132,7 +140,7 @@ export class PaypalService {
             const currency = purchaseUnit.amount.currency_code;
 
             const recarga = await this.procesarRecarga(
-                usuarioId,
+                dbOrder.usuarioId ?? '',
                 monto,
                 `Recarga PayPal - Order: ${orderId}`
             );
@@ -164,6 +172,51 @@ export class PaypalService {
         }
     }
 
+    // Capturar y procesar una orden (usado por webhook o manual)
+    // async captureAndProcessOrder(orderId: string, usuarioId: string) {
+    //     const dbOrder = await this.findOrderInDB(orderId);
+
+    //     console.log('ORDEN DE LA BASE DE DATOS => ', dbOrder)
+
+    //     if (!dbOrder) throw new Error('Orden no encontrada');
+    //     if (dbOrder.status === 'COMPLETED') return dbOrder;
+
+    //     // Capturar pago en PayPal
+    //     const captureRequest = new paypal.orders.OrdersCaptureRequest(orderId);
+    //     captureRequest.prefer('return=representation');
+
+    //     const captureResponse = await this.client.execute(captureRequest);
+    //     const captureResult = captureResponse.result;
+
+    //     if (captureResult.status !== 'COMPLETED') {
+    //         throw new Error('Pago no completado');
+    //     }
+
+    //     // Procesar recarga
+    //     const purchaseUnit = captureResult.purchase_units[0];
+    //     const monto = parseFloat(purchaseUnit.amount.value);
+    //     const currency = purchaseUnit.amount.currency_code;
+
+    //     const recarga = await this.procesarRecarga(
+    //         usuarioId,
+    //         monto,
+    //         `Recarga PayPal - Order ${orderId}`
+    //     );
+
+    //     // Actualizar DB
+    //     await this.prisma.paypalOrder.update({
+    //         where: { orderId },
+    //         data: {
+    //             status: 'COMPLETED',
+    //             captureId: captureResult.id,
+    //             capturedAt: new Date(),
+    //         },
+    //     });
+
+    //     return { capture: captureResult, recarga };
+    // }
+
+
     // Método para procesar la recarga en la base de datos
     private async procesarRecarga(usuarioId: string, monto: number, descripcion: string) {
         if (monto <= 0) throw new BadRequestException('El monto debe ser mayor a 0');
@@ -177,7 +230,7 @@ export class PaypalService {
 
             await tx.transaccion.create({
                 data: {
-                    tipo: 'RECARGA',
+                    tipo: 'RECARGA PAYPAL',
                     monto,
                     descripcion,
                     walletId: wallet.id,
@@ -201,6 +254,13 @@ export class PaypalService {
         } catch (error) {
             throw new Error(`Error getting order details: ${error.message}`);
         }
+    }
+
+    // Buscar orden en base de datos
+    async findOrderInDB(orderId: string) {
+        return this.prisma.paypalOrder.findUnique({
+            where: { orderId },
+        });
     }
 
     // Refund de pago (reembolso)

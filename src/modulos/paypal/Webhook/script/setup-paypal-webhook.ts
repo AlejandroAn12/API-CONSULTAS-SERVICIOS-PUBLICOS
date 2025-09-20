@@ -13,6 +13,7 @@ export class PaypalWebhookSetupService {
     async setupWebhook(): Promise<void> {
         try {
             const webhookUrl = `${this.config.frontendUrl}/webhooks/paypal`;
+            console.log('Configuring webhook at URL:', webhookUrl);
 
             const webhookData = {
                 url: webhookUrl,
