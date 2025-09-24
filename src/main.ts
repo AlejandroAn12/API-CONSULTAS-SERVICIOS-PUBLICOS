@@ -9,11 +9,28 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    // origin: ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:8000'],
-    origin: '*', // Cambiar a un origen específico en producción
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: '*',
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+      'Access-Control-Allow-Headers',
+      'Access-Control-Allow-Origin'
+    ],
     credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   });
+
+  // app.enableCors({
+  //   // origin: ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:8000'],
+  //   origin: 'https://fakpi.posdek.com', // Cambiar a un origen específico en producción
+  //   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE, OPTIONS',
+  //   credentials: true,
+  // });
 
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
   app.useGlobalInterceptors(new DateFormatInterceptor);
@@ -24,18 +41,6 @@ async function bootstrap() {
       req.rawBody = buf.toString(); // Guardamos el body crudo
     },
   }));
-  // Configurar body parser para webhooks
-  // app.use('/webhooks/paypal', bodyParser.raw({ type: 'application/json' }));
-  // app.use(bodyParser.json());
-
-  // Configurar body-parser para capturar rawBody
-  // app.use(
-  //   bodyParser.json({
-  //     verify: (req: any, res, buf) => {
-  //       req.rawBody = buf.toString();
-  //     },
-  //   }),
-  // );
 
   const config = new DocumentBuilder()
     .setTitle('API SERVICIOS')
